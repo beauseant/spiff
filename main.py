@@ -3,15 +3,16 @@
 import re
 import itertools
 import argparse
-
+import collections
 
 
 
 
 #Guardamos los tweets procesados que hayan dado un error en esta variable global, ejem, ejem
-global_log = {}
 global_pos = 0
 
+#Guardamos las palabras encontradas y su numero de ocurrencias en una variable global:
+global_cnt = collections.Counter ()
 
 class Tweet:
     
@@ -43,7 +44,9 @@ def getData ( cad ):
     listatw = cad.split('|')      
     
     cad = listatw[0].strip()
+    
     global global_pos
+    global global_cnt
     
     try:
         #########################################    
@@ -82,9 +85,11 @@ def getData ( cad ):
         #Vemos si tweet, rt o mencion:
         if (cad[0:2] == 'RT'):
             tipo = 'RT'
+            cad = cad [2:]
     
-        if (cad[0:7] == 'Complet'):
+        if (cad[0:10] == 'Complet RT'):
             tipo = 'RP'
+            cad = cad [10:]
         
             
         #import ipdb ; ipdb.set_trace ()
@@ -92,13 +97,29 @@ def getData ( cad ):
         #RTs
         #match_rts = re.findall(r'(RT ?[^\s]+)',cad)
     
-        match_menciones = re.findall(r'@[\w\.-]+', cad)
+        reg = re.compile (r'@[\w\.-]+')
+        match_menciones = re.findall(reg , cad)
+        cad = re.sub (reg, '', cad )
         
         #y las etiquetas:
-        match_etiquetas = re.findall(r'#[\w\.-]+', cad)
+        reg = re.compile (r'#[\w\.-]+')
+        match_etiquetas = re.findall(reg, cad)
+        cad = re.sub (reg, '', cad )
         
         #y las urls:
-        match_urls = re.findall(r'(https?://[^\s]+)',cad)
+        reg = re.compile (r'(https?://[^\s]+)')
+        match_urls = re.findall(reg ,cad)
+        cad = re.sub (reg, '', cad )
+        
+        #reg = re.compile(r'(:)')
+        #cad = re.sub(reg,'',cad).strip()
+
+
+        global_cnt.update ( collections.Counter ([word for word in re.findall(r'\b[^\W\d_]+\b',cad)]) )
+
+        
+        
+        
         
         
         #for  word in (match_menciones + match_etiquetas + match_urls):
@@ -108,6 +129,8 @@ def getData ( cad ):
               
         
         tw = Tweet (autor, match_menciones, match_etiquetas, match_urls, tipo)
+        
+        
 
     except:
         tw = Tweet ('', '', '', '', '')
@@ -125,7 +148,7 @@ def getData ( cad ):
 
 if __name__ == "__main__":
     
-    
+    global global_cnt
     
     parser	= argparse.ArgumentParser ( description='Gestion de un Active Directory desde python. Muestra informacion de usuario y pone caducidad a la cuenta' )
 
@@ -160,7 +183,7 @@ if __name__ == "__main__":
          export.write (dato.getAll () + '\n')
         
         
-
+    import ipdb ; ipdb.set_trace()
     #print lista_autores[0].getAutor()
 
     #for i in lista_autores:
